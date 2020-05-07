@@ -8,6 +8,7 @@ import torch.optim as optim
 import torch.utils.tensorboard as tb
 import torch.nn as nn
 
+import copy
 import os
 
 
@@ -126,18 +127,18 @@ models = [FullyConnectedNN([84, 42, 21], 4), FullyConnectedNN(
 
 schedulers = [  {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [25, 40, 50], gamma=0.1), "epoch": 55},
                 {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [10, 15], gamma=0.5), "epoch": 25},
-                {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [10, 15], gamma=0.1), "epoch": 25},
+                {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [20, 30], gamma=0.1), "epoch": 40},
 ]
 
-experiments = [[model, scheduler]
-               for model in models for scheduler in schedulers]
+experiments = [[copy.deepcopy(model), copy.deepcopy(scheduler), "Model #{}, scheduler #{}".format(idx_m, idx_s)]
+               for idx_m, model in enumerate(models) for idx_s, scheduler in enumerate(schedulers)]
 
-for idx, (model, scheduler) in enumerate(experiments):
+for idx, (model, scheduler, info) in enumerate(experiments):
     tensorboard = tb.SummaryWriter(os.path.join(os.path.dirname(
         os.path.realpath(__file__)), "..", "tb_logs", "nn_{}".format(idx)))
 
+    print("Experiment {}, information: {}".format(idx, info))
     runner = NeuralNetworkRunner(model, tensorboard=tensorboard)
     runner.train(lr_setup=scheduler)
 
-    # , labels = ["normal", "bacteria", "virus", "covid"]
-    runner.get_metrics().plot_confusion_matrix(tensorboard=tensorboard, labels = ["normal", "bacteria", "virus", "covid"])
+    runner.get_metrics().plot_confusion_matrix(tensorboard=tensorboard, labels = ["normal", "bacteria", "virus", "covid"], tag="nn_{}".format(idx))

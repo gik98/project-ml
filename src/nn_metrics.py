@@ -57,12 +57,12 @@ class ClassificationMetrics:
         image_np = np.array(image)
         return image_np[...,:3]
 
-    def plot_confusion_matrix(self, tensorboard, labels=None):
+    def plot_confusion_matrix(self, tensorboard, labels=None, tag=""):
         if labels == None:
             labels = range(1, self.num_classes + 1)
         df_cm = pd.DataFrame(self.C.numpy(), labels, labels)
         sn.set(font_scale=1.4)  # for label size
         sn.heatmap(df_cm, annot=True, annot_kws={"size": 16})  # font size
 
-        tensorboard.add_image("Confusion matrix", self._plot_to_image(), dataformats="HWC")
+        tensorboard.add_image("Confusion matrix {}".format(tag), self._plot_to_image(), dataformats="HWC")
 
