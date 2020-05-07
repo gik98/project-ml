@@ -4,8 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import io
 import os
-#import tensorflow as tf
-
+from PIL import Image
+import numpy as np
 
 class ClassificationMetrics:
     # Constructor takes the number of classes
@@ -50,10 +50,12 @@ class ClassificationMetrics:
         plt.savefig(buf, format='png')
         plt.close()
         buf.seek(0)
-        image = tf.image.decode_png(buf.getvalue(), channels=4)
-        image = tf.expand_dims(image, 0)
+        image = Image.open(buf)
+        #image = tf.image.decode_png(buf.getvalue(), channels=4)
+        #image = tf.expand_dims(image, 0)
 
-        return image
+        image_np = np.array(image)
+        return image_np[...,:3]
 
     def plot_confusion_matrix(self, tensorboard, labels=None):
         if labels == None:
@@ -62,5 +64,5 @@ class ClassificationMetrics:
         sn.set(font_scale=1.4)  # for label size
         sn.heatmap(df_cm, annot=True, annot_kws={"size": 16})  # font size
 
-        tensorboard.add_image("Confusion matrix", self._plot_to_image(), step=0)
+        tensorboard.add_image("Confusion matrix", self._plot_to_image(), dataformats="HWC")
 

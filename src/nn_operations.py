@@ -79,8 +79,9 @@ class NeuralNetworkRunner:
 
     # Perform training
     # Pass as arguments the desired number of epochs
-    def train(self, epochs=25, lr_scheduler=lambda optimizer: optim.lr_scheduler.MultiStepLR(optimizer, [10, 15], gamma=0.5)):
-
+    def train(self, lr_setup={"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(optimizer, [10, 15], gamma=0.5), "epoch": 25}):
+        epochs = lr_setup["epoch"]
+        lr_scheduler = lr_setup["scheduler"](self.optimizer)
         for epoch in range(1, epochs+1):
             # Train for one epoch
             self._train_epoch(epoch)
@@ -123,8 +124,10 @@ class NeuralNetworkRunner:
 models = [FullyConnectedNN([84, 42, 21], 4), FullyConnectedNN(
     [84, 32, 10], 4), FullyConnectedNN([84, 32, 10], 4, activation_type=nn.Sigmoid)]
 
-schedulers = [lambda o: optim.lr_scheduler.MultiStepLR(o, [25, 40, 50], gamma=0.1), lambda o: optim.lr_scheduler.MultiStepLR(
-    o, [10, 15], gamma=0.5), lambda o: optim.lr_scheduler.ReduceLROnPlateau(o)]
+schedulers = [  {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [25, 40, 50], gamma=0.1), "epoch": 55},
+                {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [10, 15], gamma=0.5), "epoch": 25},
+                {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [10, 15], gamma=0.1), "epoch": 25},
+]
 
 experiments = [[model, scheduler]
                for model in models for scheduler in schedulers]
@@ -134,7 +137,7 @@ for idx, (model, scheduler) in enumerate(experiments):
         os.path.realpath(__file__)), "..", "tb_logs", "nn_{}".format(idx)))
 
     runner = NeuralNetworkRunner(model, tensorboard=tensorboard)
-    runner.train(epochs=55, lr_scheduler=scheduler)
+    runner.train(lr_setup=scheduler)
 
     # , labels = ["normal", "bacteria", "virus", "covid"]
-    # runner.get_metrics().plot_confusion_matrix(tensorboard=tensorboard)
+    runner.get_metrics().plot_confusion_matrix(tensorboard=tensorboard, labels = ["normal", "bacteria", "virus", "covid"])
