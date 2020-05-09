@@ -1,6 +1,8 @@
-from nn_networks import FullyConnectedNN
+from nn_networks import FullyConnectedNN, NN_load
 from nn_metrics import ClassificationMetrics
-from dataset import torch_load_dataset
+from dataset import torch_load_dataset, feat_string_mapping, test_size
+
+import numpy as np
 
 import torch
 import torch.utils.data as data
@@ -59,7 +61,19 @@ class NeuralNetworkRunner:
             # Backpropagation
             loss.backward()
             self.optimizer.step()
-
+    
+    # Perform testing
+    def test(self):
+        self.model.eval()
+        out = []
+        with torch.no_grad():
+            for idx, (X, yt) in enumerate(self.test_data):
+                Y = self.model(X)
+                y = Y.argmax(-1)
+                out.append(y)
+        
+        return torch.cat(out)
+    
     # Perform validation
     def _validate(self):
         self.model.eval()
@@ -121,24 +135,46 @@ class NeuralNetworkRunner:
     def get_metrics(self):
         return self.metrics
 
+def runner_output_test(runner, output_path):
+    with open(output_path, "w") as file:
+        l = runner.test()
+        for idx, val in enumerate(l):
+            file.write("{}\t{}\n".format(idx, feat_string_mapping[val]))
 
-models = [FullyConnectedNN([84, 42, 21], 4), FullyConnectedNN(
-    [84, 32, 10], 4), FullyConnectedNN([84, 42, 21, 10], 4), FullyConnectedNN([84, 32, 10], 4, activation_type=nn.Sigmoid)]
 
-schedulers = [  {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [25, 40, 50], gamma=0.1), "epoch": 55},
-                {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [10, 15], gamma=0.5), "epoch": 25},
-                {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [20, 30], gamma=0.1), "epoch": 40},
-]
+def perform_experiments(store_dir=None, test_model=False, test_dir=None):
+    models = [FullyConnectedNN([84, 42, 21], 4), FullyConnectedNN(
+        [84, 32, 10], 4), FullyConnectedNN([84, 42, 21, 10], 4), FullyConnectedNN([84, 32, 10], 4, activation_type=nn.Sigmoid)]
 
-experiments = [[copy.deepcopy(model), copy.deepcopy(scheduler), "Model #{}, scheduler #{}".format(idx_m, idx_s)]
-               for idx_m, model in enumerate(models) for idx_s, scheduler in enumerate(schedulers)]
+    schedulers = [  {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [25, 40, 50], gamma=0.1), "epoch": 55},
+                    {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [10, 15], gamma=0.5), "epoch": 25},
+                    {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [20, 30], gamma=0.1), "epoch": 40},
+    ]
 
-for idx, (model, scheduler, info) in enumerate(experiments):
-    tensorboard = tb.SummaryWriter(os.path.join(os.path.dirname(
-        os.path.realpath(__file__)), "..", "tb_logs", "nn_{}".format(idx)))
+    experiments = [[copy.deepcopy(model), copy.deepcopy(scheduler), "Model #{}, scheduler #{}".format(idx_m, idx_s)]
+                for idx_m, model in enumerate(models) for idx_s, scheduler in enumerate(schedulers)]
 
-    print("Experiment {}, information: {}".format(idx, info))
+    for idx, (model, scheduler, info) in enumerate(experiments):
+        tensorboard = tb.SummaryWriter(os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), "..", "tb_logs", "nn_{}".format(idx)))
+
+        print("Experiment {}, information: {}".format(idx, info))
+        runner = NeuralNetworkRunner(model, tensorboard=tensorboard)
+        runner.train(lr_setup=scheduler)
+
+        runner.get_metrics().plot_confusion_matrix(tensorboard=tensorboard, labels = ["normal", "bacteria", "virus", "covid"], tag="nn_{}".format(idx))
+        if store_dir is not None:
+            store_path = os.path.join(store_dir, "nn_{}.torch".format(idx))
+            model.save(store_path)
+        if test_model:
+            output_path = os.path.join(test_dir, "nn_{}.txt".format(idx))
+            runner_output_test(runner, output_path)
+
+def from_model(load_path=None, test_dir=None):
+    tensorboard = tb.SummaryWriter(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "tb_logs", os.path.basename(load_path)))
+    model = NN_load(load_path)
     runner = NeuralNetworkRunner(model, tensorboard=tensorboard)
-    runner.train(lr_setup=scheduler)
 
-    runner.get_metrics().plot_confusion_matrix(tensorboard=tensorboard, labels = ["normal", "bacteria", "virus", "covid"], tag="nn_{}".format(idx))
+    output_path = os.path.join(test_dir, "{}.txt".format(os.path.basename(load_path)))
+    runner_output_test(runner, output_path)
+    runner.get_metrics().plot_confusion_matrix(tensorboard=tensorboard, labels = ["normal", "bacteria", "virus", "covid"], tag=os.path.basename(load_path))

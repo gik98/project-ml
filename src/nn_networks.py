@@ -1,4 +1,4 @@
-# Import required libraries
+import torch
 import torch.nn as nn
 import torch.optim as optim
 
@@ -21,3 +21,14 @@ class FullyConnectedNN(nn.Module):
 
     def forward(self, x):
         return self.layers(x)
+
+    def save(self, path):
+        with open(path, "wb") as file:
+            torch.save(self, file)
+
+def NN_load(path):
+    ret = None
+    with open(path, "rb") as file:
+        ret = torch.load(path)
+    
+    return ret
