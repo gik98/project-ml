@@ -123,7 +123,7 @@ class NeuralNetworkRunner:
 
 
 models = [FullyConnectedNN([84, 42, 21], 4), FullyConnectedNN(
-    [84, 32, 10], 4), FullyConnectedNN([84, 32, 10], 4, activation_type=nn.Sigmoid)]
+    [84, 32, 10], 4), FullyConnectedNN([84, 42, 21, 10], 4), FullyConnectedNN([84, 32, 10], 4, activation_type=nn.Sigmoid)]
 
 schedulers = [  {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [25, 40, 50], gamma=0.1), "epoch": 55},
                 {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [10, 15], gamma=0.5), "epoch": 25},
