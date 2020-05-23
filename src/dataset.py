@@ -8,6 +8,7 @@ validation_size = 1189
 test_size = 1191
 
 feature_cnt = 84
+batch_size_default = 32
 
 feat_string_mapping = ["normal", "bacteria", "viral", "COVID-19"]
 string_feat_mapping = {"normal": 0, "bacteria": 1, "viral": 2, "COVID-19": 3}
@@ -51,7 +52,7 @@ def load_dataset(name="test", normalize=False):
 
     return features, labels
 
-def torch_load_dataset(name="train", batch_size = 32, shuffle=True):
+def torch_load_dataset(name="train", batch_size = batch_size_default, shuffle=True):
     feat, lbl = load_dataset(name=name, normalize=True)
     
     dataset = data.TensorDataset(torch.from_numpy(feat).float(), torch.from_numpy(lbl).long())

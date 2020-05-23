@@ -146,20 +146,28 @@ def perform_experiments(store_dir=None, test_model=False, test_dir=None):
     models = [FullyConnectedNN([84, 42, 21], 4), FullyConnectedNN(
         [84, 32, 10], 4), FullyConnectedNN([84, 42, 21, 10], 4), FullyConnectedNN([84, 32, 10], 4, activation_type=nn.Sigmoid)]
 
-    schedulers = [  {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [25, 40, 50], gamma=0.1), "epoch": 55},
+    # {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [25, 40, 50], gamma=0.1), "epoch": 55}
+    schedulers = [  
                     {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [10, 15], gamma=0.5), "epoch": 25},
                     {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [20, 30], gamma=0.1), "epoch": 40},
     ]
 
-    experiments = [[copy.deepcopy(model), copy.deepcopy(scheduler), "Model #{}, scheduler #{}".format(idx_m, idx_s)]
-                for idx_m, model in enumerate(models) for idx_s, scheduler in enumerate(schedulers)]
+    optimizers = [
+                    (lambda model: optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.000001)),
+                    (lambda model: optim.SGD(model.parameters(), lr=0.1)),
+                    (lambda model: optim.Adagrad(model.parameters(), lr=0.1)),
+                    (lambda model: optim.Adagrad(model.parameters(), lr=0.1, lr_decay=1e-5))
+    ]
 
-    for idx, (model, scheduler, info) in enumerate(experiments):
+    experiments = [[copy.deepcopy(model), copy.deepcopy(scheduler), optimizer, "Model #{}, scheduler #{}, optimizer #{}".format(idx_m, idx_s, idx_o)]
+                for idx_m, model in enumerate(models) for idx_s, scheduler in enumerate(schedulers) for idx_o, optimizer in enumerate(optimizers)]
+
+    for idx, (model, scheduler, optimizer_fn, info) in enumerate(experiments):
         tensorboard = tb.SummaryWriter(os.path.join(os.path.dirname(
             os.path.realpath(__file__)), "..", "tb_logs", "nn_{}".format(idx)))
 
         print("Experiment {}, information: {}".format(idx, info))
-        runner = NeuralNetworkRunner(model, tensorboard=tensorboard)
+        runner = NeuralNetworkRunner(model, optimizer=optimizer_fn(model), tensorboard=tensorboard)
         runner.train(lr_setup=scheduler)
 
         runner.get_metrics().plot_confusion_matrix(tensorboard=tensorboard, labels = ["normal", "bacteria", "virus", "covid"], tag="nn_{}".format(idx))
