@@ -7,12 +7,14 @@ import os
 from PIL import Image
 import numpy as np
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 class ClassificationMetrics:
     # Constructor takes the number of classes
     def __init__(self, num_classes=4):
         self.num_classes = num_classes
         # Initialize a confusion matrix
-        self.C = torch.zeros(num_classes, num_classes)
+        self.C = torch.zeros(num_classes, num_classes).to(device)
 
     # Update the confusion matrix with the new scores
     def add(self, yp, yt):
@@ -60,7 +62,7 @@ class ClassificationMetrics:
     def plot_confusion_matrix(self, tensorboard, labels=None, tag=""):
         if labels == None:
             labels = range(1, self.num_classes + 1)
-        df_cm = pd.DataFrame(self.C.numpy(), labels, labels)
+        df_cm = pd.DataFrame(self.C.cpu().numpy(), labels, labels)
         sn.set(font_scale=1.4)  # for label size
         sn.heatmap(df_cm, annot=True, annot_kws={"size": 16})  # font size
 

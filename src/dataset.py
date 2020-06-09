@@ -1,7 +1,9 @@
 import numpy as np
 import os
 import torch
-import torch.utils.data as data;
+import torch.utils.data as data
+from pathlib import Path
+from PIL import Image
 
 train_size = 3569
 validation_size = 1189
@@ -60,6 +62,10 @@ def torch_load_dataset(name="train", batch_size = batch_size_default, shuffle=Tr
 
     return data_loader
 
+def torch_load_dataset_augmented(name="train", batch_size=batch_size_default, shuffle=True):
+    feat, lbl = load_dataset(name=name, normalize=True)
+    #imgs = 
+    #for path in Path('src').rglob('*.c'):
 
 def evaluate(predictions, truth, output=True):
     # {class} * {success, fails}

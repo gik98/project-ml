@@ -17,10 +17,14 @@ import os
 # This class takes as argument an instance of nn.Module
 # and provides useful methods to perform all operations
 # needed in the experiment.
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+if torch.cuda.is_available():
+    print("CUDA enabled")
+
 class NeuralNetworkRunner:
 
     def __init__(self, model, train_data=None, val_data=None, test_data=None, loss_fn=nn.CrossEntropyLoss(), optimizer=None, tensorboard=None):
-        self.model = model
+        self.model = model.to(device)
         self.loss_fn = loss_fn
         self.train_data = train_data if train_data != None else torch_load_dataset(
             "train", shuffle=True)
@@ -43,6 +47,9 @@ class NeuralNetworkRunner:
 
         # Iterate the batch
         for i, (X, yt) in enumerate(self.train_data):
+            X = X.to(device)
+            yt = yt.to(device)
+
             self.optimizer.zero_grad()
 
             # Forward pass
@@ -68,6 +75,9 @@ class NeuralNetworkRunner:
         out = []
         with torch.no_grad():
             for idx, (X, yt) in enumerate(self.test_data):
+                X = X.to(device)
+                yt = yt.to(device)
+                
                 Y = self.model(X)
                 y = Y.argmax(-1)
                 out.append(y)
@@ -82,6 +92,9 @@ class NeuralNetworkRunner:
         # Pytorch shall not memorize the gradients of this calculation
         with torch.no_grad():
             for (X, yt) in self.val_data:
+                X = X.to(device)
+                yt = yt.to(device)
+
                 # Forward pass
                 Y = self.model(X)
 
@@ -94,7 +107,7 @@ class NeuralNetworkRunner:
 
     # Perform training
     # Pass as arguments the desired number of epochs
-    def train(self, lr_setup={"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(optimizer, [10, 15], gamma=0.5), "epoch": 25}):
+    def train(self, stdout_output = True, lr_setup={"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [10, 15], gamma=0.5), "epoch": 25}):
         epochs = lr_setup["epoch"]
         lr_scheduler = lr_setup["scheduler"](self.optimizer)
         for epoch in range(1, epochs+1):
@@ -112,6 +125,8 @@ class NeuralNetworkRunner:
                 self.tensorboard.add_scalar(
                     'train/lr', lr_scheduler.get_last_lr()[0], epoch)
 
+            if stdout_output:
+                print("Training epoch {}, mAcc: {}".format(epoch, self.metrics.mAcc()))
             # Evaluate the current model
             self._validate()
 
@@ -123,7 +138,8 @@ class NeuralNetworkRunner:
                     'val/mAcc', self.metrics.mAcc(), epoch)
                 self.tensorboard.add_scalar(
                     'val/mIoU', self.metrics.mIoU(), epoch)
-
+            if stdout_output:
+                print("Validation epoch {}, mAcc: {}".format(epoch, self.metrics.mAcc()))
             # Update the learning rate according to the scheduler
             lr_scheduler.step()
 
@@ -141,42 +157,6 @@ def runner_output_test(runner, output_path):
         for idx, val in enumerate(l):
             file.write("{}\t{}\n".format(idx, feat_string_mapping[val]))
 
-
-def perform_experiments(store_dir=None, test_model=False, test_dir=None):
-    models = [FullyConnectedNN([84, 42, 21], 4), FullyConnectedNN(
-        [84, 32, 10], 4), FullyConnectedNN([84, 42, 21, 10], 4), FullyConnectedNN([84, 32, 10], 4, activation_type=nn.Sigmoid)]
-
-    # {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [25, 40, 50], gamma=0.1), "epoch": 55}
-    schedulers = [  
-                    {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [10, 15], gamma=0.5), "epoch": 25},
-                    {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(o, [20, 30], gamma=0.1), "epoch": 40},
-    ]
-
-    optimizers = [
-                    (lambda model: optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.000001)),
-                    (lambda model: optim.SGD(model.parameters(), lr=0.1)),
-                    (lambda model: optim.Adagrad(model.parameters(), lr=0.1)),
-                    (lambda model: optim.Adagrad(model.parameters(), lr=0.1, lr_decay=1e-5))
-    ]
-
-    experiments = [[copy.deepcopy(model), copy.deepcopy(scheduler), optimizer, "Model #{}, scheduler #{}, optimizer #{}".format(idx_m, idx_s, idx_o)]
-                for idx_m, model in enumerate(models) for idx_s, scheduler in enumerate(schedulers) for idx_o, optimizer in enumerate(optimizers)]
-
-    for idx, (model, scheduler, optimizer_fn, info) in enumerate(experiments):
-        tensorboard = tb.SummaryWriter(os.path.join(os.path.dirname(
-            os.path.realpath(__file__)), "..", "tb_logs", "nn_{}".format(idx)))
-
-        print("Experiment {}, information: {}".format(idx, info))
-        runner = NeuralNetworkRunner(model, optimizer=optimizer_fn(model), tensorboard=tensorboard)
-        runner.train(lr_setup=scheduler)
-
-        runner.get_metrics().plot_confusion_matrix(tensorboard=tensorboard, labels = ["normal", "bacteria", "virus", "covid"], tag="nn_{}".format(idx))
-        if store_dir is not None:
-            store_path = os.path.join(store_dir, "nn_{}.torch".format(idx))
-            model.save(store_path)
-        if test_model:
-            output_path = os.path.join(test_dir, "nn_{}.txt".format(idx))
-            runner_output_test(runner, output_path)
 
 def from_model(load_path=None, test_dir=None):
     tensorboard = tb.SummaryWriter(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "tb_logs", os.path.basename(load_path)))
