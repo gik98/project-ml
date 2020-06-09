@@ -2,6 +2,7 @@ import numpy as np
 import os
 import torch
 import torch.utils.data as data
+import torchvision.transforms as transforms
 from pathlib import Path
 from PIL import Image
 
@@ -18,8 +19,7 @@ string_feat_mapping = {"normal": 0, "bacteria": 1, "viral": 2, "COVID-19": 3}
 base_path = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), "..", "dataset")
 
-
-def load_dataset(name="test", normalize=False):
+def get_dataset_size(name):
     dataset_size = -1
     if name == "train":
         dataset_size = train_size
@@ -27,6 +27,11 @@ def load_dataset(name="test", normalize=False):
         dataset_size = validation_size
     elif name == "test":
         dataset_size = test_size
+
+    return dataset_size
+
+def load_dataset(name="test", normalize=False):
+    dataset_size = get_dataset_size(name)
 
     if dataset_size == -1:
         return
@@ -64,8 +69,20 @@ def torch_load_dataset(name="train", batch_size = batch_size_default, shuffle=Tr
 
 def torch_load_dataset_augmented(name="train", batch_size=batch_size_default, shuffle=True):
     feat, lbl = load_dataset(name=name, normalize=True)
-    #imgs = 
-    #for path in Path('src').rglob('*.c'):
+    tr = transforms.Compose([transforms.Grayscale(), transforms.ToTensor(), transforms.Normalize(0.5, 0.5)])
+
+    imgs = torch.zeros([len(feat), 256, 256])
+    row = torch.zeros([len(feat), 256])
+    for path in Path("dataset/images/{}".format(name)).rglob("jpeg"):
+        n = path.split("/")[-1]
+        n = n.split(".")[0]
+        imgs[int(n)] = tr(Image.open(path))
+    
+    imgs = torch.cat((imgs, feat), dim=1)
+    dataset = torch.utils.data.DataLoader(imgs, batch_size=batch_size, shuffle=shuffle)
+    return dataset
+    # TODO returns extra row with padded feature
+
 
 def evaluate(predictions, truth, output=True):
     # {class} * {success, fails}

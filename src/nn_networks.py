@@ -86,7 +86,7 @@ class AugmentedConvNN(nn.Module):
         y = functional.relu(self.fc3b(y))
 
         print("x dim: {}, y dim: {}".format(x.size(), y.size))
-        x = torch.cat(y, dim=1)
+        x = torch.cat((x, y), dim=1)
 
         x = self.fc4(x)
         x = self.fc5(x)
