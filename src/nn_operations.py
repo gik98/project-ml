@@ -24,7 +24,8 @@ if torch.cuda.is_available():
 class NeuralNetworkRunner:
 
     def __init__(self, model, train_data=None, val_data=None, test_data=None, loss_fn=nn.CrossEntropyLoss(), optimizer=None, tensorboard=None):
-        self.model = model.to(device)
+        #self.model = model.to(device)
+        self.model = model
         self.loss_fn = loss_fn
         self.train_data = train_data if train_data != None else torch_load_dataset(
             "train", shuffle=True)
@@ -123,8 +124,7 @@ class NeuralNetworkRunner:
                 self.tensorboard.add_scalar(
                     'train/mIoU', self.metrics.mIoU(), epoch)
                 self.tensorboard.add_scalar(
-                    'train/lr', lr_scheduler.get_last_lr()[0], epoch)
-
+                    'train/lr', self.optimizer.param_groups[0]['lr'], epoch)
             if stdout_output:
                 print("Training epoch {}, mAcc: {}".format(epoch, self.metrics.mAcc()))
             # Evaluate the current model
