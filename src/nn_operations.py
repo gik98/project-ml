@@ -158,10 +158,10 @@ def runner_output_test(runner, output_path):
             file.write("{}\t{}\n".format(idx, feat_string_mapping[val]))
 
 
-def from_model(load_path=None, test_dir=None):
+def from_model(load_path=None, test_dir=None, test_data=None):
     tensorboard = tb.SummaryWriter(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "tb_logs", os.path.basename(load_path)))
     model = NN_load(load_path)
-    runner = NeuralNetworkRunner(model, tensorboard=tensorboard)
+    runner = NeuralNetworkRunner(model, tensorboard=tensorboard, test_data=test_data)
 
     output_path = os.path.join(test_dir, "{}.txt".format(os.path.basename(load_path)))
     runner_output_test(runner, output_path)

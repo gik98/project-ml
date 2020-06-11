@@ -30,6 +30,32 @@ class FullyConnectedNN(nn.Module):
         with open(path, "wb") as file:
             torch.save(self, file)
 
+class FullyConnectedNN2(nn.Module):
+    def __init__(self, channels, num_classes, activation_type=nn.ReLU):
+        super(FullyConnectedNN2, self).__init__()
+        self.num_classes = num_classes
+        
+        activation = activation_type()
+        self.drop = nn.Dropout(p = 0.2)
+
+        # We create the list of layers in the order we want them to be evaluated
+        layers = []
+        for i in range(1, len(channels)):
+            layers.append(nn.Linear(channels[i-1], channels[i]))
+            layers.append(activation)
+            if i%2:
+                layers.append(self.drop)
+
+        layers.append(nn.Linear(channels[-1], num_classes))
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.layers(x)
+
+    def save(self, path):
+        with open(path, "wb") as file:
+            torch.save(self, file)
+
 
 def NN_load(path):
     ret = torch.load(path)

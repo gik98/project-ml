@@ -18,7 +18,7 @@ batch_size_default = 32
 #weight_vector = torch.FloatTensor([3569.0/951.0, 3569.0/1664.0, 3569.0/909.0, 3569.0/45.0]).to(device)
 #weight_vector *= weight_vector
 weight_vector = torch.FloatTensor([1e3/951.0, 1e3/1664.0, 1e3/909.0, 1e3/45.0]).to(device)
-weight_vector *= weight_vector
+#weight_vector *= weight_vector
 
 feat_string_mapping = ["normal", "bacteria", "viral", "COVID-19"]
 string_feat_mapping = {"normal": 0, "bacteria": 1, "viral": 2, "COVID-19": 3}
