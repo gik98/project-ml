@@ -43,7 +43,7 @@ I considered the use of neural networks to solve the classification task, perfor
 The feed-forward neural network is composed of 4 layers of, respectively, 84, 42, 21 and 4 perceptron.
 Increasing further the number of layers had no sensible effect on the precision of the model; similarly, the effect of changing the number of perceptrons of each hidden layer was not dramatic, above a certain threshold.
 
-I experimented with two optimizers, Stochastic Gradient Descent and Adagrad. (...)
+I experimented with two optimizers, Stochastic Gradient Descent and Adagrad, the final evaluation has been performed with Adagrad, setting an initial learning rate of 5e-4 and  weight decay of 1e-3
 
 As a mean to control overfitting, I considered both dropout layers and weight decays (L2 regolarizers)...
 

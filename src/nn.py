@@ -62,7 +62,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def perform_experiment(store_dir=None, test_model=False, test_dir=None):    
     model = FullyConnectedNN([84, 42, 21], 4).to(device)
-    optimizer = optim.Adagrad(model.parameters(), lr=0.0005, weight_decay=0.001)#, weight_decay=0.1
+    optimizer = optim.Adagrad(model.parameters(), lr=0.0005, weight_decay=0.01)#, weight_decay=0.1
     scheduler = {"scheduler": lambda o: optim.lr_scheduler.MultiStepLR(
         o, [20, 30], gamma=.1), "epoch": 35}
     
