@@ -9,7 +9,7 @@
 \usepackage{amssymb}
 \usepackage{wrapfig}
 \usepackage{subcaption}
-\usepackage[breaklinks=true,bookmarks=false]{hyperref}
+\usepackage[breaklinks=true,bookmarks=false,hidelinks]{hyperref}
 \usepackage{float}
 \cvprfinalcopy
 
@@ -33,7 +33,7 @@ Objective of the project is to create a classifier which is able to determine wh
 
 The dataset on which the classifier is trained is composed of about 6000 examples, made of (a) the black-white thoracic X-rays image, 256 pixel wide and high, and (b) a feature vector of 84 entries, extracted from the image. Of the entire dataset, ~60\% shall be considered for training, ~20\% for validation and ~20\% for testing. It shall be noted that the amount of examples for each class varies greatly: the examples of COVID-19 are very few compared to the other classes, which are more equally represented.
 
-Performance shall be measured as the average over classes of the sensitivity, i.e. the proportion of examples from a given class correctly identified as such. 
+Performance shall be measured as the average of the sensitivity over the classes, i.e. the proportion of examples from a given class correctly identified as such. 
 
 \section{Proposed Method}
 
@@ -47,12 +47,11 @@ I considered the use of neural networks to solve the classification task, perfor
 
 The feed-forward neural network is composed of 4 layers of, respectively, 84, 42, 21 and 4 perceptron.
 Increasing further the number of layers had no sensible effect on the precision of the model; similarly, the effect of changing the number of perceptrons of each hidden layer was not dramatic, above a certain threshold.
-Each convolution step is composed of a convolution
-I experimented with two optimizers, Stochastic Gradient Descent and Adagrad, and with two activation functions, ReLU and sigmoid. The final evaluation has been performed with the Adagrad optimizer, setting an initial learning rate of 5e-4, without weight decay. ReLU has been chosen as activation function. The training has been scheduled using a multi-step learning rate scheduler with a milestone at the 20th epoch; the entire learning lasts 35 epochs. The loss function being used is a weighted cross-entropy loss, where weights compensate the fact that the dataset is not homogeneous in terms of number of instances. For any class $C$ of the dataset $D$, the weight has been set to $1000{|C|}^{-1}$; alternative weights of ${|C|}^{-2}$ and $|C|^{-0.5}$ has been considered but resulted in an unbalanced true positive rate between classes.
+I experimented with two optimizers, Stochastic Gradient Descent and Adagrad, and with two activation functions, ReLU and sigmoid. The final evaluation has been performed with the Adagrad optimizer, setting an initial learning rate of 5e-4, without weight decay. ReLU has been chosen as activation function. The training has been scheduled using a multi-step learning rate scheduler with a milestone at the 20th epoch; the entire learning lasts 35 epochs. The loss function being used is a weighted cross-entropy loss, where weights compensate the fact that the number of examples available in the dataset varies greatly depending on the class. For any class $C$ of the dataset $D$, the weight has been set to $1000{|C|}^{-1}$; alternative weights of ${|C|}^{-2}$ and $|C|^{-0.5}$ has been considered but resulted in an unbalanced true positive rate between classes.
 
 \subsection{Deep network on image dataset}
 
-The deep network is composed of two main segments. The first involves the image processing, and is composed of two main convolution steps, while the second is a feed-forward network which processes the output of the convolution network and the feature vector input. ReLU is chosen as activation function for each step of the network.
+The deep network is composed of two main segments. The first involves the image processing, and is composed of two main convolution steps, while the second is a feed-forward network which processes the output of the convolution network and the feature vector input. ReLU is chosen as activation function for each step of the network. The structure of the network is shown in figure~\ref{fig:1}.
 
 Each convolution step is composed of a convolution layer with kernel size 5*5 and stride 1; a dropout layer with $p = 0.2$ is inserted after each convolution; then, max pooling with a 3*3 filter is performed to reduce dimensionality.
 
@@ -65,6 +64,7 @@ Training has been performed using the Adagrad optimizer, setting an initial lear
 \begin{figure}[H]
     \includegraphics[width=0.7\linewidth]{Network.png}
     \caption{Deep network structure}
+    \label{fig:1}
 \end{figure}
 
 
@@ -106,6 +106,8 @@ The following graphs show two experiments, one with each network described in th
     \caption{Network \#2: confusion matrix}
 \end{figure}
 
+The final performance of the network \#1 evaluated on the validation set is $0.8040$; the performance of the network \#2 evaluated on the validation set is $0.7810$.
+However, the convolution network approach might yield a higher performance using a deeper network, either by attempting to train a well-known deep neural network (e.g. VGGnet, ResNet) or building an ad-hoc network.
 
 %{\small
 %\bibliographystyle{ieee}
