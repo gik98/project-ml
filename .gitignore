@@ -142,7 +142,6 @@ dmypy.json
 
 dataset/
 tb_logs/
-plots/
 models/
 output/
 deep/
